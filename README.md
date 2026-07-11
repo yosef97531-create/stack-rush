@@ -12,12 +12,18 @@ Because it's a single static file, you can host it anywhere:
 - **GitHub Pages** — push the folder, enable Pages.
 - **itch.io** — upload as an HTML game (great for organic traffic + built-in audience).
 
-## Monetize with ads
-The layout has two clearly-marked ad slots: a top leaderboard and a bottom box (the bottom one shows during the game-over screen — high-attention moment).
+## Monetize with ads — AdSense go-live checklist
+The site is already **AdSense-ready**: two marked ad slots (top leaderboard + a bottom box that shows on the game-over screen), a **privacy policy** (`privacy.html`), a **cookie/consent notice**, and an **`ads.txt`** placeholder.
 
-1. Apply for **Google AdSense** (needs a live domain with some content/traffic).
-2. Once approved, paste your AdSense `<script>` tag into the `<head>` (there's a commented placeholder there).
-3. Replace each `.ad-slot` div with your AdSense unit `<ins>` code.
+Before applying / after approval:
+1. **Fill the placeholders** (required):
+   - In `privacy.html`, replace `[your-contact-email]` with a real contact address.
+   - In `ads.txt`, replace `pub-0000000000000000` with your AdSense publisher ID (after approval).
+2. **Apply for Google AdSense** with your live URL (needs some real traffic/content first).
+3. **After approval**, paste your AdSense `<script>` tag into the `<head>` of `index.html` (commented placeholder is there).
+4. **Replace each `.ad-slot` div** with your AdSense unit `<ins>` code.
+5. **Consent for EEA/UK:** enable Google's free built-in consent message in your AdSense dashboard (Privacy & messaging → GDPR). Google requires a certified CMP there for personalised ads in those regions; the on-site cookie bar is a general notice, not a full CMP.
+6. Commit + push — it auto-deploys.
 
 **Tips for real ad revenue on hyper-casual games:**
 - Game-over interstitials convert best — the bottom slot is positioned for that.

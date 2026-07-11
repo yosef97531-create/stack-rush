@@ -134,6 +134,16 @@
   footer{margin:10px 0 26px;color:var(--muted);font-size:12px;text-align:center;line-height:1.6;padding:0 14px;}
   footer a{color:var(--accent);text-decoration:none;}
 
+  /* Cookie / consent bar */
+  .cookie-bar{
+    position:fixed;left:0;right:0;bottom:0;z-index:50;
+    background:rgba(9,11,28,.97);border-top:1px solid var(--panel-border);
+    padding:12px 16px;display:flex;gap:12px;align-items:center;justify-content:center;
+    flex-wrap:wrap;font-size:13px;color:var(--muted);
+  }
+  .cookie-bar a{color:var(--accent);}
+  .cookie-bar.hidden{display:none;}
+
   /* --- Mobile: tighten chrome so the game fills the phone screen --- */
   @media (max-width:640px){
     header{padding:8px 10px 2px;}
@@ -219,8 +229,25 @@
 
 <footer>
   <strong>Stack Rush</strong> — a one-tap arcade game. How high can you climb?<br>
-  © 2026 YDPLAYS · Made with ❤️
+  © 2026 YDPLAYS · <a href="/privacy.html">Privacy Policy</a> · Made with ❤️
 </footer>
+
+<!-- Cookie / ads consent notice (required for AdSense) -->
+<div class="cookie-bar hidden" id="cookie-bar">
+  <span>🍪 This site uses cookies for ads and analytics. See our <a href="/privacy.html">Privacy Policy</a>.</span>
+  <button class="btn small" id="cookie-ok">Got it</button>
+</div>
+
+<script>
+  // Lightweight cookie notice. Remembers dismissal so it shows only once.
+  (function(){
+    var KEY='stackRushCookieOK', bar=document.getElementById('cookie-bar');
+    if(!localStorage.getItem(KEY)) bar.classList.remove('hidden');
+    document.getElementById('cookie-ok').addEventListener('click', function(){
+      localStorage.setItem(KEY,'1'); bar.classList.add('hidden');
+    });
+  })();
+</script>
 
 <script>
 (() => {

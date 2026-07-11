@@ -1,0 +1,8 @@
+# ads.txt for Stack Rush
+# ---------------------------------------------------------------
+# AFTER you're approved for Google AdSense, replace pub-0000000000000000
+# below with YOUR publisher ID (found in AdSense > Account > Settings,
+# it looks like "pub-1234567890123456"), then commit + push.
+# Until then this line is a harmless placeholder.
+# ---------------------------------------------------------------
+google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
