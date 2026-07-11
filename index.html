@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Stack Rush — Addictive Tower Stacking Game</title>
+<meta name="description" content="Stack Rush is a fast, addictive one-tap tower-stacking arcade game. Daily challenges, leaderboard, and endless fun. How high can you go?" />
+
+<!-- ============================================================= -->
+<!-- GOOGLE ADSENSE: paste your approved script tag below.         -->
+<!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script> -->
+<!--                                                                -->
+<!-- For REWARDED ADS you also need the H5 Games "Ad Placement API"-->
+<!-- enabled on your AdSense account, then include:                -->
+<!-- <script>window.adsbygoogle=window.adsbygoogle||[];function adConfig(c){(adsbygoogle=window.adsbygoogle||[]).push(c);}function adBreak(o){adConfig({preloadAdBreaks:'on'});(adsbygoogle=window.adsbygoogle||[]).push(o);}</script> -->
+<!-- ============================================================= -->
+
+<style>
+  :root{
+    --bg-top:#0f1226; --bg-bot:#1b1f4a;
+    --accent:#ffd166; --text:#eef1ff; --muted:#9aa0c9;
+    --panel:rgba(255,255,255,.06); --panel-border:rgba(255,255,255,.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:'Trebuchet MS',system-ui,-apple-system,sans-serif;
+    background:linear-gradient(160deg,var(--bg-top),var(--bg-bot));
+    color:var(--text);min-height:100%;
+    display:flex;flex-direction:column;align-items:center;overflow-x:hidden;
+    overscroll-behavior-y:contain;
+  }
+  header{width:100%;text-align:center;padding:14px 10px 6px;}
+  header h1{
+    font-size:clamp(22px,5vw,34px);letter-spacing:2px;
+    background:linear-gradient(90deg,#ffd166,#ff7ea3,#7ee0ff);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-transform:uppercase;
+  }
+  header p{color:var(--muted);font-size:13px;margin-top:2px;}
+
+  .ad-slot{
+    width:100%;max-width:728px;min-height:90px;margin:8px auto;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--panel);border:1px dashed var(--panel-border);
+    border-radius:12px;color:var(--muted);font-size:12px;letter-spacing:1px;text-transform:uppercase;
+  }
+
+  .game-wrap{position:relative;width:min(94vw,420px);margin:6px auto;}
+  canvas{
+    display:block;width:100%;height:auto;border-radius:18px;
+    background:linear-gradient(180deg,#141833,#0c0e22);
+    box-shadow:0 20px 50px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.05);
+    touch-action:none;cursor:pointer;user-select:none;
+  }
+
+  /* round icon button (mute) */
+  .icon-btn{
+    position:absolute;top:11px;left:50%;transform:translateX(-50%);z-index:6;
+    width:38px;height:38px;border-radius:50%;cursor:pointer;pointer-events:auto;
+    background:rgba(255,255,255,.08);border:1px solid var(--panel-border);
+    color:var(--text);font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;
+    transition:transform .1s ease,background .15s;
+  }
+  .icon-btn:active{transform:translateX(-50%) scale(.9);}
+  .icon-btn.off{opacity:.55;}
+
+  .hud{position:absolute;top:14px;left:0;right:0;display:flex;justify-content:space-between;padding:0 18px;pointer-events:none;font-weight:bold;}
+  .hud .score{font-size:34px;text-shadow:0 2px 10px rgba(0,0,0,.5);}
+  .hud .right{font-size:13px;color:var(--accent);text-align:right;line-height:1.4;}
+  .hud .right .mode-tag{color:#7ee0ff;}
+
+  .overlay{
+    position:absolute;inset:0;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:12px;text-align:center;padding:20px;
+    background:rgba(9,11,28,.74);backdrop-filter:blur(4px);border-radius:18px;overflow-y:auto;
+  }
+  .overlay.hidden{display:none;}
+  .overlay h2{font-size:28px;letter-spacing:1px;}
+  .overlay .big-score{font-size:52px;color:var(--accent);line-height:1;}
+  .overlay .sub{color:var(--muted);font-size:13px;letter-spacing:1px;}
+  .btn{
+    pointer-events:auto;cursor:pointer;border:none;border-radius:40px;
+    padding:13px 30px;font-size:17px;font-weight:bold;color:#12142e;
+    background:linear-gradient(90deg,#ffd166,#ffb454);
+    box-shadow:0 8px 24px rgba(255,180,84,.35);transition:transform .1s ease;letter-spacing:1px;
+  }
+  .btn:active{transform:scale(.95);}
+  .btn.secondary{background:var(--panel);color:var(--text);border:1px solid var(--panel-border);box-shadow:none;}
+  .btn.reward{background:linear-gradient(90deg,#7ee0ff,#54b0ff);color:#08234a;box-shadow:0 8px 24px rgba(84,176,255,.4);}
+  .btn.small{padding:10px 20px;font-size:14px;}
+  .badge{font-size:13px;color:#7ee0ff;font-weight:bold;letter-spacing:1px;}
+  .tip{color:var(--muted);font-size:13px;max-width:290px;line-height:1.5;}
+  .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+
+  .initials{
+    pointer-events:auto;width:110px;text-align:center;text-transform:uppercase;
+    font-size:20px;font-weight:bold;letter-spacing:4px;color:var(--text);
+    background:var(--panel);border:1px solid var(--panel-border);border-radius:10px;padding:8px;
+  }
+
+  /* Leaderboard list */
+  .lb-list{width:100%;max-width:300px;pointer-events:auto;}
+  .lb-row{display:flex;justify-content:space-between;padding:7px 12px;border-radius:8px;font-size:15px;}
+  .lb-row:nth-child(odd){background:rgba(255,255,255,.04);}
+  .lb-row .rank{color:var(--muted);width:28px;text-align:left;}
+  .lb-row .nm{flex:1;text-align:left;font-weight:bold;letter-spacing:2px;}
+  .lb-row .sc{color:var(--accent);font-weight:bold;}
+  .lb-row.you{outline:1px solid var(--accent);}
+
+  /* Rewarded-ad overlay */
+  .ad-play{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:16px;background:#05060f;border-radius:18px;z-index:10;
+  }
+  .ad-play.hidden{display:none;}
+  .ad-play .fake-ad{
+    width:80%;max-width:300px;aspect-ratio:16/10;border-radius:14px;
+    background:linear-gradient(135deg,#243b8f,#7ee0ff);
+    display:flex;align-items:center;justify-content:center;color:#08234a;font-weight:bold;font-size:15px;text-align:center;padding:14px;
+  }
+  .ad-play .count{font-size:15px;color:var(--muted);}
+  .mode-btns{display:flex;flex-direction:column;gap:10px;width:100%;max-width:250px;}
+
+  footer{margin:10px 0 26px;color:var(--muted);font-size:12px;text-align:center;line-height:1.6;padding:0 14px;}
+  footer a{color:var(--accent);text-decoration:none;}
+
+  /* --- Mobile: tighten chrome so the game fills the phone screen --- */
+  @media (max-width:640px){
+    header{padding:8px 10px 2px;}
+    header p{font-size:12px;}
+    #ad-top{min-height:60px;margin:4px auto;}
+    #ad-bottom{min-height:70px;}
+    .game-wrap{width:min(96vw,460px);margin:4px auto;}
+    .btn{padding:15px 30px;font-size:18px;}       /* bigger tap targets */
+    .btn.small{padding:12px 22px;font-size:15px;}
+    footer{margin:8px 0 18px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Stack Rush</h1>
+  <p>One tap. Perfect timing. How high can you climb?</p>
+</header>
+
+<div class="ad-slot" id="ad-top">Ad space — 728×90</div>
+
+<div class="game-wrap">
+  <canvas id="game" width="420" height="620"></canvas>
+
+  <div class="hud">
+    <div class="score" id="score">0</div>
+    <div class="right" id="hud-right">BEST<br><span id="best">0</span></div>
+  </div>
+
+  <button class="icon-btn" id="mute-btn" aria-label="Toggle sound" title="Toggle sound">🔊</button>
+
+  <!-- START -->
+  <div class="overlay" id="start-overlay">
+    <div class="badge">🏆 ARCADE</div>
+    <h2>Stack Rush</h2>
+    <p class="tip">Tap / <b>Space</b> to drop each block. Perfect stacks widen your tower and build combos. Don't run out of block!</p>
+    <div class="mode-btns">
+      <button class="btn" id="play-normal">▶ Play Endless</button>
+      <button class="btn reward" id="play-daily">🗓️ Daily Challenge</button>
+      <button class="btn secondary small" id="open-lb">🏅 Leaderboard</button>
+    </div>
+  </div>
+
+  <!-- GAME OVER -->
+  <div class="overlay hidden" id="over-overlay">
+    <div class="sub" id="over-mode">SCORE</div>
+    <div class="big-score" id="final-score">0</div>
+    <div class="badge" id="over-badge"></div>
+
+    <!-- Rewarded continue (only shows when available) -->
+    <button class="btn reward" id="continue-btn">📺 Continue — Watch Ad</button>
+
+    <div class="row" style="align-items:center;">
+      <input class="initials" id="initials" maxlength="3" value="YOU" aria-label="Your initials" />
+    </div>
+    <div class="row">
+      <button class="btn" id="retry-btn">↻ Play Again</button>
+      <button class="btn secondary small" id="share-btn">📤 Share</button>
+      <button class="btn secondary small" id="over-lb">🏅 Ranks</button>
+    </div>
+    <p class="tip" id="rank-note"></p>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="overlay hidden" id="lb-overlay">
+    <h2>🏅 Leaderboard</h2>
+    <div class="sub" id="lb-scope">TOP 10 · LOCAL</div>
+    <div class="lb-list" id="lb-list"></div>
+    <button class="btn secondary small" id="lb-back">◀ Back</button>
+    <p class="tip">Scores are saved on this device. Wire the <b>submitScore()</b> hook to a backend for a global board — see README.</p>
+  </div>
+
+  <!-- REWARDED AD PLAYER (simulated) -->
+  <div class="ad-play hidden" id="ad-play">
+    <div class="sub">REWARDED AD</div>
+    <div class="fake-ad" id="fake-ad">Your rewarded video ad plays here</div>
+    <div class="count" id="ad-count">Reward in 3…</div>
+  </div>
+</div>
+
+<div class="ad-slot" id="ad-bottom">Ad space — 300×250</div>
+
+<footer>
+  Lightweight, ad-ready hyper-casual game — static HTML, hosts anywhere.<br>
+  Replace ad slots with your AdSense units · wire up the rewarded + leaderboard hooks · Made with ❤️
+</footer>
+
+<script>
+(() => {
+  "use strict";
+
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  // UI
+  const $ = id => document.getElementById(id);
+  const scoreEl=$('score'), bestEl=$('best'), hudRight=$('hud-right');
+  const startOv=$('start-overlay'), overOv=$('over-overlay'), lbOv=$('lb-overlay'), adPlay=$('ad-play');
+  const finalEl=$('final-score'), overBadge=$('over-badge'), overMode=$('over-mode'), rankNote=$('rank-note');
+  const continueBtn=$('continue-btn'), initialsEl=$('initials'), lbList=$('lb-list'), lbScope=$('lb-scope');
+  const adCount=$('ad-count'), fakeAd=$('fake-ad');
+
+  // ===== GLOBAL LEADERBOARD CONFIG =====================================
+  // Leave '' to run local-only. Paste your deployed Worker/API URL here to
+  // go global instantly (e.g. 'https://stack-rush-lb.YOURNAME.workers.dev').
+  // A ready-to-deploy Cloudflare Worker ships in worker.js — see README.
+  const LEADERBOARD_API = '';
+  // =====================================================================
+
+  // ---- Persistence ----
+  const BEST_KEY='stackRushBest', LB_KEY='stackRushLB', NAME_KEY='stackRushName';
+  let best = +(localStorage.getItem(BEST_KEY)||0);
+  let playerName = (localStorage.getItem(NAME_KEY)||'YOU').toUpperCase().slice(0,3);
+  bestEl.textContent = best;
+  initialsEl.value = playerName;
+
+  function getLB(){ try{ return JSON.parse(localStorage.getItem(LB_KEY)||'[]'); }catch(_){ return []; } }
+  function saveLB(lb){ localStorage.setItem(LB_KEY, JSON.stringify(lb)); }
+
+  // Submit a run's score to the leaderboard. Dedupes by runId so a "continue"
+  // updates the same run instead of adding a duplicate.
+  function submitScore(sc){
+    if(sc<=0) return -1;
+    let lb = getLB().filter(e => e.runId !== runId);
+    lb.push({ name: playerName, score: sc, runId, ts: Date.now(), mode });
+    lb.sort((a,b)=>b.score-a.score);
+    lb = lb.slice(0,10);
+    saveLB(lb);
+    postRemote(sc);   // fire-and-forget global submit (no-op if unconfigured)
+    return lb.findIndex(e => e.runId===runId && e.score===sc);
+  }
+
+  // Submit to the global backend (if configured). Safe no-op offline.
+  async function postRemote(sc){
+    if(!LEADERBOARD_API || sc<=0) return;
+    try{
+      await fetch(LEADERBOARD_API, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ name: playerName, score: sc, mode })
+      });
+    }catch(_){}
+  }
+
+  // Fetch the global top-10 for a mode. Returns array or null on failure/offline.
+  async function fetchRemoteTop(m){
+    if(!LEADERBOARD_API) return null;
+    try{
+      const r = await fetch(`${LEADERBOARD_API}/top?mode=${encodeURIComponent(m)}`, {cache:'no-store'});
+      if(!r.ok) return null;
+      const data = await r.json();
+      return Array.isArray(data) ? data.slice(0,10) : null;
+    }catch(_){ return null; }
+  }
+
+  // ---- Seeded RNG for daily challenge (deterministic per calendar day) ----
+  function mulberry32(a){ return function(){ a|=0;a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return((t^t>>>14)>>>0)/4294967296; }; }
+  function todayKey(){ const d=new Date(); return d.getFullYear()*10000 + (d.getMonth()+1)*100 + d.getDate(); }
+
+  // ---- Game constants ----
+  const BLOCK_H=34, BASE_W=210, START_Y=H-90;
+  // Gentle start, smooth ramp: the "perfect" window is forgiving early and
+  // gradually tightens, and block speed eases up rather than jumping.
+  function perfectTol(){ return Math.max(3.5, 8 - score*0.05); }   // 8px early -> ~3.5px later
+  function speedFor(s){ return Math.min(6.0, 1.7 + s*0.035); }     // slow open, gradual climb
+
+  // ---- State ----
+  let state='idle';            // idle | playing | over
+  let mode='normal';           // normal | daily
+  let stack=[], mover=null, debris=[], particles=[], rings=[], confetti=[];
+  let camY=0, camYTarget=0, score=0, combo=0, speed=1.7, dir=1, shake=0, hue=200, flash=0;
+  let continueUsed=false, runId=0, dailyTarget=0, rng=Math.random;
+  let runStartBest=0, beatBest=false, bestFlash=0;
+
+  function colorFor(i){ return `hsl(${(hue+i*8)%360} 65% 58%)`; }
+
+  function reset(){
+    runId++;
+    stack=[]; debris=[]; particles=[]; rings=[]; confetti=[];
+    score=0; combo=0; speed=1.7; dir=1; shake=0; flash=0;
+    camY=0; camYTarget=0; continueUsed=false;
+    runStartBest=best; beatBest=false; bestFlash=0;   // for the live high-score celebration
+
+    if(mode==='daily'){
+      const seed = todayKey();
+      rng = mulberry32(seed);
+      hue = 40 + Math.floor(rng()*300);
+      dailyTarget = 18 + Math.floor(rng()*30);   // deterministic target for the day
+    } else {
+      rng = Math.random;
+      hue = 190 + Math.floor(Math.random()*140);
+      dailyTarget = 0;
+    }
+
+    const bx=(W-BASE_W)/2;
+    stack.push({ x:bx, w:BASE_W, y:START_Y, color:colorFor(0) });
+    spawnMover();
+    scoreEl.textContent='0';
+    updateHud();
+  }
+
+  function updateHud(){
+    if(mode==='daily'){
+      hudRight.innerHTML = `<span class="mode-tag">DAILY</span><br>TARGET ${dailyTarget}`;
+    } else {
+      hudRight.innerHTML = `BEST<br><span id="best">${best}</span>`;
+    }
+  }
+
+  function spawnMover(){
+    const top=stack[stack.length-1];
+    const y=top.y-BLOCK_H;
+    const fromLeft = stack.length%2===0;
+    mover={ x: fromLeft?-top.w:W, w:top.w, y, color:colorFor(stack.length), fromLeft };
+    dir = fromLeft?1:-1;
+  }
+
+  function startMode(m){
+    mode=m; reset(); state='playing';
+    startOv.classList.add('hidden'); overOv.classList.add('hidden');
+    lbOv.classList.add('hidden'); adPlay.classList.add('hidden');
+  }
+
+  function drop(){
+    if(state!=='playing'||!mover) return;
+    const top=stack[stack.length-1];
+    const overlapL=Math.max(mover.x,top.x);
+    const overlapR=Math.min(mover.x+mover.w, top.x+top.w);
+    const overlap=overlapR-overlapL;
+
+    if(overlap<=0){ spawnDebris(mover.x,mover.w,mover.y,mover.color); beep(140,.18,'sawtooth',.25); triggerGameOver(); return; }
+
+    const diff=mover.x-top.x;
+
+    if(Math.abs(diff)>perfectTol()){
+      const trimW=mover.w-overlap;
+      const trimX=diff>0?overlapR:mover.x;
+      spawnDebris(trimX,trimW,mover.y,mover.color);
+      combo=0; beep(220+Math.random()*40,.08,'square',.15);
+      stack.push({ x:overlapL, w:overlap, y:mover.y, color:mover.color });
+      finishPlacement(overlap);
+    } else {
+      combo++; flash=Math.min(1, .5+combo*.1);
+      const grow=Math.min(6,(BASE_W-overlap));
+      const nx=top.x-grow/2, nw=Math.min(BASE_W,overlap+grow);
+      spawnPerfectFx(top.x+top.w/2, mover.y, combo);
+      perfectChime(combo);
+      stack.push({ x:nx, w:nw, y:mover.y, color:mover.color });
+      finishPlacement(nw);
+    }
+  }
+
+  function finishPlacement(placedW){
+    const gain = 1 + (combo>1?combo:0);
+    score += gain; scoreEl.textContent=score;
+    speed = speedFor(score);
+    camYTarget += BLOCK_H;
+    shake = Math.min(8, 3+combo);
+
+    // Live "NEW BEST!" celebration the moment you pass your previous record.
+    if(!beatBest && runStartBest>0 && score>runStartBest){
+      beatBest=true; bestFlash=1; spawnConfetti(); beep(880,.18,'triangle',.22); setTimeout(()=>beep(1320,.22,'triangle',.2),120);
+    }
+
+    if(placedW<8){ triggerGameOver(); return; }
+    spawnMover();
+  }
+
+  // Show the game-over screen. Offers a rewarded continue if not yet used.
+  function triggerGameOver(){
+    state='over'; mover=null; shake=10;
+    const canContinue = !continueUsed && score>0;
+    continueBtn.style.display = canContinue ? 'inline-block' : 'none';
+
+    // record best + submit to leaderboard for this run
+    if(score>best){ best=score; localStorage.setItem(BEST_KEY,String(best)); }
+    const rank = submitScore(score);
+
+    finalEl.textContent = score;
+    overMode.textContent = mode==='daily' ? `DAILY · target ${dailyTarget}` : 'SCORE';
+
+    let badge='';
+    if(mode==='daily' && score>=dailyTarget && dailyTarget>0){
+      badge='✅ DAILY COMPLETE!';
+      localStorage.setItem('stackRushDaily_'+todayKey(), String(score));
+      spawnConfetti();
+    } else if(score>=best && score>0){ badge='🎉 NEW BEST!'; spawnConfetti(); }
+    else if(best>0){ badge='Best: '+best; }
+    overBadge.textContent = badge;
+
+    rankNote.textContent = rank>=0 ? `You ranked #${rank+1} on the local board.` : '';
+    updateHud();
+    setTimeout(()=>{ overOv.classList.remove('hidden'); }, 480);
+  }
+
+  // ---- Rewarded ad → continue ----
+  function requestContinue(){
+    overOv.classList.add('hidden');
+    playRewardedAd(() => reviveAndResume());
+  }
+
+  // Simulated rewarded ad. Swap the body for a real SDK call (see comment).
+  function playRewardedAd(onReward){
+    /* ===== REWARDED AD HOOK ============================================
+       Google H5 Ad Placement API:
+         adBreak({ type:'reward',
+                   beforeReward:(showAd)=>showAd(),
+                   adDismissed:()=>{ /* no reward *\/ },
+                   rewardGranted:()=>onReward(),
+                   adBreakDone:()=>{} });
+       Or portal SDKs:
+         CrazyGames.SDK.ad.requestAd('rewarded',{adFinished:onReward});
+         PokiSDK.rewardedBreak().then(ok=>{ if(ok) onReward(); });
+       Below is a self-contained SIMULATION so it works with no network.
+       =================================================================== */
+    adPlay.classList.remove('hidden');
+    let t=3;
+    adCount.textContent = `Reward in ${t}…`;
+    fakeAd.textContent = 'Your rewarded video ad plays here';
+    const iv = setInterval(()=>{
+      t--;
+      if(t>0){ adCount.textContent=`Reward in ${t}…`; }
+      else{
+        clearInterval(iv);
+        adCount.textContent='Reward granted! 🎁';
+        setTimeout(()=>{ adPlay.classList.add('hidden'); onReward(); }, 500);
+      }
+    }, 1000);
+  }
+
+  function reviveAndResume(){
+    continueUsed=true;
+    // revive assist: make sure the top block isn't impossibly thin
+    const top=stack[stack.length-1];
+    if(top.w<70){ const cx=top.x+top.w/2; top.w=90; top.x=cx-45; }
+    combo=0; shake=6;
+    spawnMover();
+    state='playing';
+    beep(660,.15,'triangle',.2);
+  }
+
+  // ---- Leaderboard UI ----
+  function esc(s){ return String(s).replace(/[<>&"]/g, c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+  function renderRows(list, scopeLabel){
+    lbScope.textContent = 'TOP 10 · ' + scopeLabel;
+    if(!list || !list.length){ lbList.innerHTML='<div class="lb-row"><span class="nm">No scores yet — go play!</span></div>'; return; }
+    lbList.innerHTML = list.map((e,i)=>{
+      const you = (e.runId!==undefined && e.runId===runId) ? ' you' : '';
+      const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1);
+      return `<div class="lb-row${you}"><span class="rank">${medal}</span><span class="nm">${esc(e.name||'---')}</span><span class="sc">${e.score|0}</span></div>`;
+    }).join('');
+  }
+  async function showLB(){
+    startOv.classList.add('hidden'); overOv.classList.add('hidden'); lbOv.classList.remove('hidden');
+    if(LEADERBOARD_API){
+      lbScope.textContent='LOADING GLOBAL…';
+      lbList.innerHTML='';
+      const remote = await fetchRemoteTop(mode);
+      if(remote){ renderRows(remote, 'GLOBAL'); return; }
+      renderRows(getLB(), 'LOCAL (offline)');   // graceful fallback
+    } else {
+      renderRows(getLB(), 'LOCAL');
+    }
+  }
+
+  // ---- Share ----
+  function shareScore(){
+    const txt = (mode==='daily')
+      ? `I scored ${score} on today's Stack Rush daily challenge! Can you beat it?`
+      : `I stacked ${score} in Stack Rush! Think you can beat me?`;
+    const url = location.href.split('#')[0];
+    const btn = $('share-btn');
+    if(navigator.share){
+      navigator.share({ title:'Stack Rush', text:txt, url }).catch(()=>{});
+    } else if(navigator.clipboard){
+      navigator.clipboard.writeText(`${txt} ${url}`).then(()=>{
+        const old=btn.textContent; btn.textContent='✓ Copied!';
+        setTimeout(()=>{ btn.textContent=old; }, 1500);
+      }).catch(()=>{});
+    }
+  }
+
+  // ---- Effects ----
+  const CONFETTI_COLORS=['#ffd166','#ff7ea3','#7ee0ff','#7dffb0','#c792ff','#ffb454'];
+  function spawnDebris(x,w,y,color){ debris.push({x,w,y,color,vy:0,vx:(Math.random()-.5)*1.5,rot:0,vr:(Math.random()-.5)*.2}); }
+
+  // Juicy perfect: particle burst scales with combo + an expanding glow ring.
+  function spawnPerfectFx(cx,y,combo){
+    const n = 16 + Math.min(18, combo*3);
+    for(let i=0;i<n;i++){
+      const a=Math.random()*Math.PI*2, s=2+Math.random()*4;
+      const col = combo>=3 ? CONFETTI_COLORS[i%CONFETTI_COLORS.length] : '#ffd166';
+      particles.push({x:cx,y:y+BLOCK_H/2,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1.2,life:1,color:col});
+    }
+    rings.push({x:cx,y:y+BLOCK_H/2,r:8,life:1,color: combo>=3?'#7ee0ff':'#ffd166'});
+  }
+
+  // Screen-space confetti for beating your best / completing the daily.
+  function spawnConfetti(){
+    for(let i=0;i<70;i++){
+      confetti.push({
+        x:Math.random()*W, y:-10-Math.random()*80,
+        vx:(Math.random()-.5)*3, vy:2+Math.random()*3.5,
+        w:4+Math.random()*5, h:7+Math.random()*7,
+        rot:Math.random()*Math.PI, vr:(Math.random()-.5)*.3,
+        color:CONFETTI_COLORS[i%CONFETTI_COLORS.length], life:1
+      });
+    }
+  }
+
+  // ---- Audio ----
+  let actx=null, muted = localStorage.getItem('stackRushMuted')==='1';
+  function beep(freq,dur,type='sine',vol=0.2){
+    if(muted) return;
+    try{
+      if(!actx) actx=new (window.AudioContext||window.webkitAudioContext)();
+      const o=actx.createOscillator(), g=actx.createGain();
+      o.type=type; o.frequency.value=freq;
+      g.gain.setValueAtTime(vol,actx.currentTime);
+      g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+dur);
+      o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime+dur);
+    }catch(e){}
+  }
+  // Rising two-note chime; pitch climbs with combo for a satisfying streak.
+  function perfectChime(combo){
+    const base = 520 + Math.min(600, combo*45);
+    beep(base,.12,'triangle',.2);
+    setTimeout(()=>beep(base*1.5,.14,'triangle',.16), 70);
+  }
+  function toggleMute(){
+    muted=!muted;
+    localStorage.setItem('stackRushMuted', muted?'1':'0');
+    const b=$('mute-btn'); b.textContent = muted?'🔇':'🔊'; b.classList.toggle('off', muted);
+    if(!muted){ if(!actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(_){} } beep(660,.08,'sine',.15); }
+  }
+
+  // ---- Loop ----
+  function update(){
+    camY += (camYTarget-camY)*0.12;
+    if(state==='playing'&&mover){
+      mover.x += speed*dir;
+      if(mover.x<0){ mover.x=0; dir=1; }
+      else if(mover.x+mover.w>W){ mover.x=W-mover.w; dir=-1; }
+    }
+    for(const d of debris){ d.vy+=.6; d.y+=d.vy; d.x+=d.vx; d.rot+=d.vr; }
+    debris=debris.filter(d=>d.y-camY<H+200);
+    for(const p of particles){ p.vy+=.12; p.x+=p.vx; p.y+=p.vy; p.life-=.03; }
+    particles=particles.filter(p=>p.life>0);
+    for(const rg of rings){ rg.r+=3.2; rg.life-=.05; }
+    rings=rings.filter(rg=>rg.life>0);
+    for(const c of confetti){ c.vy+=.08; c.x+=c.vx; c.y+=c.vy; c.rot+=c.vr; c.life-=.008; }
+    confetti=confetti.filter(c=>c.life>0 && c.y<H+30);
+    if(shake>0) shake*=.86;
+    if(flash>0) flash-=.06;
+    if(bestFlash>0) bestFlash-=.012;
+    hue+=.15;
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const g=ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0,`hsl(${(hue+180)%360} 40% 14%)`); g.addColorStop(1,'#0a0c1e');
+    ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+    ctx.save();
+    ctx.translate((Math.random()-.5)*shake, (Math.random()-.5)*shake + camY);
+    for(const b of stack) drawBlock(b.x,b.y,b.w,b.color);
+    for(const d of debris){ ctx.save(); ctx.translate(d.x+d.w/2,d.y+BLOCK_H/2); ctx.rotate(d.rot); drawBlock(-d.w/2,-BLOCK_H/2,d.w,d.color,true); ctx.restore(); }
+    if(state==='playing'&&mover) drawBlock(mover.x,mover.y,mover.w,mover.color,false,true);
+    for(const rg of rings){ ctx.globalAlpha=Math.max(0,rg.life)*.7; ctx.strokeStyle=rg.color; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(rg.x,rg.y,rg.r,0,Math.PI*2); ctx.stroke(); }
+    for(const p of particles){ ctx.globalAlpha=Math.max(0,p.life); ctx.fillStyle=p.color; ctx.fillRect(p.x-2,p.y-2,4,4); }
+    ctx.globalAlpha=1;
+    ctx.restore();
+
+    if(flash>0){ ctx.globalAlpha=flash*.35; ctx.fillStyle='#ffd166'; ctx.fillRect(0,0,W,H); ctx.globalAlpha=1; }
+
+    // confetti (screen-space, drawn above everything)
+    for(const c of confetti){
+      ctx.save(); ctx.globalAlpha=Math.max(0,Math.min(1,c.life*1.5));
+      ctx.translate(c.x,c.y); ctx.rotate(c.rot);
+      ctx.fillStyle=c.color; ctx.fillRect(-c.w/2,-c.h/2,c.w,c.h);
+      ctx.restore();
+    }
+    ctx.globalAlpha=1;
+
+    // "NEW BEST!" banner
+    if(bestFlash>0){
+      ctx.globalAlpha=Math.min(1,bestFlash*1.4);
+      ctx.fillStyle='#ffd166'; ctx.font='bold 26px Trebuchet MS'; ctx.textAlign='center';
+      ctx.shadowColor='rgba(0,0,0,.6)'; ctx.shadowBlur=8;
+      ctx.fillText('★ NEW BEST! ★', W/2, H*0.34);
+      ctx.shadowBlur=0; ctx.globalAlpha=1;
+    }
+
+    if(combo>1&&state==='playing'){ ctx.fillStyle='#ffd166'; ctx.font='bold 18px Trebuchet MS'; ctx.textAlign='center'; ctx.fillText('PERFECT ×'+combo, W/2, 70); }
+
+    // daily target progress line
+    if(mode==='daily'&&state==='playing'&&dailyTarget>0){
+      ctx.fillStyle = score>=dailyTarget ? '#7dffb0' : '#7ee0ff';
+      ctx.font='bold 13px Trebuchet MS'; ctx.textAlign='center';
+      ctx.fillText(score>=dailyTarget?'TARGET REACHED — keep going!':`${score}/${dailyTarget} to beat today`, W/2, H-16);
+    }
+  }
+
+  function drawBlock(x,y,w,color,isDebris=false,isMover=false){
+    const r=6;
+    roundRect(ctx,x,y,w,BLOCK_H,r); ctx.fillStyle=color; ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.18)'; roundRect(ctx,x,y,w,BLOCK_H*.4,r); ctx.fill();
+    ctx.fillStyle='rgba(0,0,0,.18)'; ctx.fillRect(x,y+BLOCK_H*.75,w,BLOCK_H*.25);
+    if(isMover){ ctx.strokeStyle='rgba(255,255,255,.5)'; ctx.lineWidth=2; roundRect(ctx,x,y,w,BLOCK_H,r); ctx.stroke(); }
+  }
+  function roundRect(ctx,x,y,w,h,r){
+    r=Math.min(r,w/2,h/2);
+    ctx.beginPath(); ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+  function loop(){ update(); draw(); requestAnimationFrame(loop); }
+
+  // ---- Input ----
+  function tap(e){ if(e) e.preventDefault(); if(!actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(_){} } if(state==='playing') drop(); }
+  canvas.addEventListener('pointerdown', tap);
+  window.addEventListener('keydown', e=>{
+    if(e.code==='Space'||e.code==='ArrowUp'){
+      e.preventDefault();
+      if(state==='playing') drop();
+      else if(state==='over' && overOv.classList.contains('hidden')===false) startMode(mode);
+      else if(state==='idle') startMode('normal');
+    }
+  });
+
+  $('play-normal').addEventListener('click', ()=>startMode('normal'));
+  $('play-daily').addEventListener('click', ()=>startMode('daily'));
+  $('retry-btn').addEventListener('click', ()=>startMode(mode));
+  $('open-lb').addEventListener('click', showLB);
+  $('over-lb').addEventListener('click', showLB);
+  $('lb-back').addEventListener('click', ()=>{ lbOv.classList.add('hidden'); startOv.classList.remove('hidden'); });
+  continueBtn.addEventListener('click', requestContinue);
+  $('share-btn').addEventListener('click', shareScore);
+  $('mute-btn').addEventListener('click', toggleMute);
+  initialsEl.addEventListener('input', ()=>{
+    playerName = (initialsEl.value||'YOU').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3) || 'YOU';
+    initialsEl.value = playerName;
+    localStorage.setItem(NAME_KEY, playerName);
+  });
+
+  // init
+  { const b=$('mute-btn'); b.textContent = muted?'🔇':'🔊'; b.classList.toggle('off', muted); }
+  reset(); state='idle'; loop();
+})();
+</script>
+</body>
+</html>
